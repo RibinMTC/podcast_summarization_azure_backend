@@ -8,14 +8,13 @@ from datetime import datetime, timedelta
 from services.storage_service import AzureBlobStorageService
 from services.podcast_summarizer import AzureOpenAISummarizer
 from services.batch_transcriber import BatchTranscriber
-from models.podcast import ProcessingStatus
 
 app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 # Client API - HTTP Trigger for file upload
 
 
-@app.route(route="podcast-summarizer/process-audio", auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="podcast-summarizer/process-audio")
 @app.durable_client_input(client_name="starter")
 async def upload_podcast(req: func.HttpRequest, starter: df.DurableOrchestrationClient) -> func.HttpResponse:
     """

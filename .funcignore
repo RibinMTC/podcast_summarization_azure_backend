@@ -1,1 +1,11 @@
 .venv
+.git*
+.vscode
+local.settings.json
+tests
+debug_code
+.python_packages
+.pytest_cache
+.env
+local.settings.json
+*azurite
