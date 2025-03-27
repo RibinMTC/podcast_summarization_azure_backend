@@ -9,3 +9,9 @@ debug_code
 .env
 local.settings.json
 *azurite
+notebook
+function_app_with_summarization.py
+AzuriteConfig
+.pytest*
+requirements_dev.txt
+README.md

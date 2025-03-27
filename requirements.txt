@@ -1,6 +1,6 @@
 azure-cognitiveservices-speech==1.42.0
 azure-functions==1.21.3
-azure-search-documents=11.6.0b7
+azure-search-documents==11.6.0b7
 azure-functions-durable==1.2.10
 azure-storage-blob==12.25.0
 azure-core==1.32.0
