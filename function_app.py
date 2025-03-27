@@ -21,8 +21,8 @@ app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 
 @app.route(route="rag-test/process-audio")
-@app.durable_client_input(client_name="audio_processor")
-async def upload_podcast(req: func.HttpRequest, audio_processor: df.DurableOrchestrationClient) -> func.HttpResponse:
+@app.durable_client_input(client_name="audioProcessor")
+async def upload_podcast(req: func.HttpRequest, audioProcessor: df.DurableOrchestrationClient) -> func.HttpResponse:
     """
     Upload endpoint that starts the transcription orchestration
     """
@@ -46,9 +46,9 @@ async def upload_podcast(req: func.HttpRequest, audio_processor: df.DurableOrche
         logging.info(f"Saved file: {file_url}")
 
         # Start orchestration
-        instance_id = await audio_processor.start_new("transcribe_and_index_orchestrator", None, {"file_url": file_url, "podcast_id": podcast_id})
+        instance_id = await audioProcessor.start_new("transcribe_and_index_orchestrator", None, {"file_url": file_url, "podcast_id": podcast_id})
 
-        return audio_processor.create_check_status_response(req, instance_id)
+        return audioProcessor.create_check_status_response(req, instance_id)
     except Exception as e:
         return {"error": str(e)}
 
@@ -56,8 +56,8 @@ async def upload_podcast(req: func.HttpRequest, audio_processor: df.DurableOrche
 
 
 @app.route(route="rag-test/query")
-@app.durable_client_input(client_name="rag_processor")
-async def query_podcasts(req: func.HttpRequest, rag_processor: df.DurableOrchestrationClient) -> func.HttpResponse:
+@app.durable_client_input(client_name="ragProcessor")
+async def query_podcasts(req: func.HttpRequest, ragProcessor: df.DurableOrchestrationClient) -> func.HttpResponse:
     """
     Query endpoint that searches podcast transcripts using RAG
     """
@@ -78,9 +78,9 @@ async def query_podcasts(req: func.HttpRequest, rag_processor: df.DurableOrchest
         filters = req_body.get("filters")
 
         # Start orchestration for query
-        instance_id = await rag_processor.start_new("rag_query_orchestrator", None, {"query": query, "filters": filters, "index_name": index_name})
+        instance_id = await ragProcessor.start_new("rag_query_orchestrator", None, {"query": query, "filters": filters, "index_name": index_name})
 
-        return rag_processor.create_check_status_response(req, instance_id)
+        return ragProcessor.create_check_status_response(req, instance_id)
 
     except Exception as e:
         logging.error(f"Error in query: {str(e)}")
@@ -199,8 +199,8 @@ def check_transcription(transcriptionId: str) -> str:
 # RAG Activity Functions
 
 
-@app.activity_trigger(input_name="index_name")
-async def create_search_index(index_name: str) -> str:
+@app.activity_trigger(input_name="indexName")
+async def create_search_index(indexName: str) -> str:
     """Create Azure AI Search index for podcast transcripts"""
     try:
         # Get configuration from environment variables
@@ -211,14 +211,14 @@ async def create_search_index(index_name: str) -> str:
         search_service = AzureAISearchService(
             service_endpoint=search_endpoint,
             admin_key=search_key,
-            index_name=index_name
+            index_name=indexName
         )
 
         # Try to query the index to check if it exists
         try:
             search_service.search_client.get_document_count()
-            logging.info(f"Index {index_name} already exists")
-            return json.dumps({"status": "exists", "index_name": index_name})
+            logging.info(f"Index {indexName} already exists")
+            return json.dumps({"status": "exists", "indexName": indexName})
         except ResourceNotFoundError:
             # Index doesn't exist, create it
             index_service = AzureAISearchIndexCreationService(
@@ -230,9 +230,9 @@ async def create_search_index(index_name: str) -> str:
             )
 
             # Create index
-            await index_service.create_podcast_transcript_index(index_name)
+            await index_service.create_podcast_transcript_index(indexName)
 
-            logging.info(f"Created search index: {index_name}")
+            logging.info(f"Created search index: {indexName}")
             return json.dumps({"status": "created"})
 
     except Exception as e:
@@ -240,11 +240,11 @@ async def create_search_index(index_name: str) -> str:
         raise
 
 
-@app.activity_trigger(input_name="data_json")
-async def index_transcript(data_json: str):
+@app.activity_trigger(input_name="jsonData")
+async def index_transcript(jsonData: str):
     """Index transcript for RAG using Azure AI Search"""
     try:
-        data = json.loads(data_json)
+        data = json.loads(jsonData)
         index_name = data["index_name"]
         transcript = data["transcript"]
 
@@ -281,11 +281,11 @@ async def index_transcript(data_json: str):
         raise
 
 
-@app.activity_trigger(input_name="data_json")
-async def process_rag_query(data_json: str) -> str:
+@app.activity_trigger(input_name="jsonData")
+async def process_rag_query(jsonData: str) -> str:
     """Process RAG query and return answer with sources"""
     try:
-        data = json.loads(data_json)
+        data = json.loads(jsonData)
         query = data["query"]
         index_name = data["index_name"]
         filters = data.get("filters")
