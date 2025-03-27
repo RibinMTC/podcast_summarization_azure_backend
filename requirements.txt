@@ -1,7 +1,13 @@
 azure-cognitiveservices-speech==1.42.0
 azure-functions==1.21.3
+azure-search-documents=11.6.0b7
 azure-functions-durable==1.2.10
 azure-storage-blob==12.25.0
+azure-core==1.32.0
 openai==1.67.0
 pydantic==2.10.6
 requests==2.32.3
+dotenv==0.9.9
+azure-identity==1.21.0
+semchunk==3.2.0
+tiktoken==0.9.0
