@@ -63,7 +63,7 @@ async def query_podcasts(req: func.HttpRequest, ragProcessor: df.DurableOrchestr
     """
     try:
         # Get query parameters
-        req_body = await req.get_json()
+        req_body = req.get_json()
         query = req_body.get("query")
         index_name = req_body.get("index_name")
 
@@ -125,6 +125,10 @@ def transcribe_and_index_orchestrator(context: df.DurableOrchestrationContext):
                 # 4. Add transcript to search index from previous step
                 yield context.call_activity(
                     "index_transcript", json.dumps({"index_name": index_name, "transcript": transcript}))
+
+                return json.dumps({"index_name": index_name})
+            next_check = context.current_utc_datetime + timedelta(seconds=10)
+            yield context.create_timer(next_check)
     except Exception as e:
         return {"error": str(e)}
 
@@ -204,8 +208,8 @@ async def create_search_index(indexName: str) -> str:
     """Create Azure AI Search index for podcast transcripts"""
     try:
         # Get configuration from environment variables
-        search_endpoint = os.environ["AZURE_SEARCH_ENDPOINT"]
-        search_key = os.environ["AZURE_SEARCH_KEY"]
+        search_endpoint = os.environ["AZURE_SEARCH_SERVICE_ENDPOINT"]
+        search_key = os.environ["AZURE_SEARCH_ADMIN_KEY"]
 
         # Check if index already exists before creating it
         search_service = AzureAISearchService(
@@ -250,7 +254,7 @@ async def index_transcript(jsonData: str):
 
         # Create required services
         chunker = TranscriptChunker(
-            chunk_size=os.environ["CHUNK_SIZE"], chunk_overlap=os.environ["CHUNK_OVERLAP"])
+            chunk_size=int(os.environ["CHUNK_SIZE"]), chunk_overlap=int(os.environ["CHUNK_OVERLAP"]))
         embedding_service = AzureOpenAIEmbedding(
             api_key=os.environ["AZURE_OPENAI_KEY"],
             endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
@@ -274,7 +278,7 @@ async def index_transcript(jsonData: str):
         embeddings = await embedding_service.generate_embeddings(texts=chunks)
 
         # 3. Index chunks with embeddings
-        search_service.index_transcript_chunks(
+        await search_service.index_transcript_chunks(
             chunks=chunks, embeddings=embeddings)
     except Exception as e:
         logging.error(f"Error indexing transcript: {str(e)}")
